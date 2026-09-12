@@ -100,7 +100,7 @@ AOT 清单单一事实源：`InvariableConst.AotDllNames`。团结 iOS 导出工
 
 菜单：`VastStarryRiver/打包/打包安卓`。
 
-输出：`Build/Android/{productName}.apk`。本轮打 APK（侧载/国内渠道）。需要 AAB 时在编辑器改 `buildAppBundle` 后自行出包。
+输出：`Build/Android/{productName}.apk`。每次先清空 `Build/Android` 再出包。本轮打 APK（侧载/国内渠道）。需要 AAB 时在编辑器改 `buildAppBundle` 后自行出包。
 
 打包菜单仅在当前 `BuildTarget` 已是 `Android` 且已装模块时可点，先切平台再点。安卓须 IL2CPP、含 ARM64、强制网络权限、包名非空。keystore 本机填写，未配置只警告。
 
@@ -110,13 +110,13 @@ Gradle 插件与依赖经 `Assets/Plugins/Android/settingsTemplate.gradle` 解�
 
 菜单：`VastStarryRiver/打包/打包苹果`。
 
-输出：`Build/iOS`（Xcode 工程）。打包菜单仅在当前 `BuildTarget` 已是 `iOS` 且已装模块时可点，先切平台再点。未装 iOS 模块时该菜单不可点。切到 `BuildTarget.iOS` 后仍可在本机导出该端 HybridCLR DLL 与 YooAsset Bundle。完整 IPA 通常需要 Mac。Team / 描述文件本机填写，未配置只警告。不经 Android Gradle，不读 `settingsTemplate.gradle`。
+输出：`Build/iOS/XcodeProject`（Xcode 工程）。每次先清空 `Build/iOS` 再导出。同级 `Il2CppBackup` 是引擎增量目录，不进 Xcode。打包菜单仅在当前 `BuildTarget` 已是 `iOS` 且已装模块时可点，先切平台再点。未装 iOS 模块时该菜单不可点。切到 `BuildTarget.iOS` 后仍可在本机导出该端 HybridCLR DLL 与 YooAsset Bundle。完整 IPA 通常需要 Mac。Team / 描述文件本机填写，未配置只警告。不经 Android Gradle，不读 `settingsTemplate.gradle`。
 
 ## 11. 鸿蒙构建
 
 菜单：`VastStarryRiver/打包/打包鸿蒙`。
 
-输出：`Build/OpenHarmony` 导出工程，再走 DevEco 安装。打包菜单仅在当前 `BuildTarget` 已是 `OpenHarmony` 且已装模块时可点，先切平台再点。须 IL2CPP、强制网络权限、包名非空。证书与 Profile 本机填写，未配置只警告。团结 External Tools 需本机已配 OpenHarmony SDK / Node / JDK。不经 Android Gradle，不读 `settingsTemplate.gradle`。
+输出：`Build/OpenHarmony/DevEcoProject` 导出工程，再走 DevEco 签名、出 HAP 并安装。每次先清空 `Build/OpenHarmony` 再导出。同级 `Il2CppBackup` 是引擎增量目录，不进 DevEco。菜单打开 `EditorUserBuildSettings.exportAsOpenHarmonyProject` 并保持勾选，不在编辑器内出 HAP。打包菜单仅在当前 `BuildTarget` 已是 `OpenHarmony` 且已装模块时可点，先切平台再点。须 IL2CPP、强制网络权限、包名非空。证书与 Profile 本机填写，未配置只警告。团结 External Tools 需本机已配 OpenHarmony SDK / Node / JDK。不经 Android Gradle，不读 `settingsTemplate.gradle`。
 
 ## 12. 推荐的完整构建顺序
 
@@ -182,6 +182,6 @@ AssetBundleTool
 
 BuildPlayer
   -> Build/Android/*.apk
-  -> Build/iOS/（Xcode）
-  -> Build/OpenHarmony/（DevEco）
+  -> Build/iOS/XcodeProject/（Xcode）
+  -> Build/OpenHarmony/DevEcoProject/（DevEco）
 ```

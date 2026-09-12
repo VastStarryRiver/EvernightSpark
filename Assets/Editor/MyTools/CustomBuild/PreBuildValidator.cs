@@ -11,15 +11,15 @@ using UnityEngine;
 
 namespace MyTools
 {
+    public enum AppPackTarget
+    {
+        Android,
+        iOS,
+        OpenHarmony
+    }
+
     public static class PreBuildValidator
     {
-        public enum AppPackTarget
-        {
-            Android,
-            iOS,
-            OpenHarmony
-        }
-
         private const string CloudServiceRelativeDir = "Assets/Scripts/CloudService";
         private const string CloudHelperRelativePath = "Assets/Scripts/CloudService/CloudHelper.cs";
         private const string PlayerSettingsRelativePath = "ProjectSettings/ProjectSettings.asset";

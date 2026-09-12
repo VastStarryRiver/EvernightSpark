@@ -2,6 +2,7 @@ using Invariable;
 using System.IO;
 using System.Linq;
 using UnityEditor;
+using UnityEditor.Build.Reporting;
 
 
 
@@ -9,13 +10,19 @@ namespace MyTools
 {
     public class CustomBuildScript
     {
+        private const string XcodeProjectFolder = "XcodeProject";
+        private const string DevEcoProjectFolder = "DevEcoProject";
+        private const string Il2CppBackupFolder = "Il2CppBackup";
+
+
+
         /// <summary>
         /// 打包安卓 APK
         /// </summary>
         [MenuItem("VastStarryRiver/打包/打包安卓", false, 30)]
         public static void PackageProject_Android()
         {
-            PackageProject(PreBuildValidator.AppPackTarget.Android);
+            PackageProject(AppPackTarget.Android);
         }
 
         /// <summary>
@@ -24,7 +31,7 @@ namespace MyTools
         [MenuItem("VastStarryRiver/打包/打包安卓", true, 30)]
         public static bool PackageProject_Android_Enable()
         {
-            return CanPack(PreBuildValidator.AppPackTarget.Android);
+            return CanPack(AppPackTarget.Android);
         }
 
         /// <summary>
@@ -33,7 +40,7 @@ namespace MyTools
         [MenuItem("VastStarryRiver/打包/打包苹果", false, 31)]
         public static void PackageProject_iOS()
         {
-            PackageProject(PreBuildValidator.AppPackTarget.iOS);
+            PackageProject(AppPackTarget.iOS);
         }
 
         /// <summary>
@@ -42,7 +49,7 @@ namespace MyTools
         [MenuItem("VastStarryRiver/打包/打包苹果", true, 31)]
         public static bool PackageProject_iOS_Enable()
         {
-            return CanPack(PreBuildValidator.AppPackTarget.iOS);
+            return CanPack(AppPackTarget.iOS);
         }
 
         /// <summary>
@@ -51,7 +58,7 @@ namespace MyTools
         [MenuItem("VastStarryRiver/打包/打包鸿蒙", false, 32)]
         public static void PackageProject_OpenHarmony()
         {
-            PackageProject(PreBuildValidator.AppPackTarget.OpenHarmony);
+            PackageProject(AppPackTarget.OpenHarmony);
         }
 
         /// <summary>
@@ -60,7 +67,7 @@ namespace MyTools
         [MenuItem("VastStarryRiver/打包/打包鸿蒙", true, 32)]
         public static bool PackageProject_OpenHarmony_Enable()
         {
-            return CanPack(PreBuildValidator.AppPackTarget.OpenHarmony);
+            return CanPack(AppPackTarget.OpenHarmony);
         }
 
         /// <summary>
@@ -106,7 +113,7 @@ namespace MyTools
         /// <summary>
         /// 在当前 BuildTarget 已对齐时执行 BuildPlayer
         /// </summary>
-        private static void PackageProject(PreBuildValidator.AppPackTarget target)
+        private static void PackageProject(AppPackTarget target)
         {
             BuildTarget buildTarget = PreBuildValidator.GetBuildTarget(target);
             BuildTargetGroup buildTargetGroup = PreBuildValidator.GetBuildTargetGroup(target);
@@ -140,14 +147,25 @@ namespace MyTools
 
             ConfigUtils.InitDirectory(outputRoot);
 
+            string locationPathName = outputRoot;
+
             if (buildTarget == BuildTarget.Android)
             {
+                locationPathName = $"{outputRoot}/{PlayerSettings.productName}.apk";
                 EditorUserBuildSettings.buildAppBundle = false;
+                EditorUserBuildSettings.exportAsGoogleAndroidProject = false;
             }
-
-            string locationPathName = buildTarget == BuildTarget.Android
-                ? $"{outputRoot}/{PlayerSettings.productName}.apk"
-                : outputRoot;
+            else if (buildTarget == BuildTarget.iOS)
+            {
+                locationPathName = $"{outputRoot}/{XcodeProjectFolder}";
+                ConfigUtils.InitDirectory(locationPathName);
+            }
+            else if (buildTarget == BuildTarget.OpenHarmony)
+            {
+                locationPathName = $"{outputRoot}/{DevEcoProjectFolder}";
+                ConfigUtils.InitDirectory(locationPathName);
+                EditorUserBuildSettings.exportAsOpenHarmonyProject = true;
+            }
 
             string[] scenes = EditorBuildSettings.scenes
                 .Where(scene => scene.enabled)
@@ -170,10 +188,11 @@ namespace MyTools
                 options = BuildOptions.None
             };
 
-            UnityEditor.Build.Reporting.BuildReport report = BuildPipeline.BuildPlayer(options);
+            BuildReport report = BuildPipeline.BuildPlayer(options);
 
-            if (report.summary.result == UnityEditor.Build.Reporting.BuildResult.Succeeded)
+            if (report.summary.result == BuildResult.Succeeded)
             {
+                CollectIl2CppBackup(outputRoot);
                 GameLog.Info($"{folderName} 构建完成: {locationPathName}");
             }
             else
@@ -183,9 +202,32 @@ namespace MyTools
         }
 
         /// <summary>
+        /// 把与平台夹平级的 Il2CppBackup 迁入当前端输出目录
+        /// </summary>
+        private static void CollectIl2CppBackup(string outputRoot)
+        {
+            string leftover = $"{ConfigUtils.AppBuildPath}/{Il2CppBackupFolder}";
+            string target = $"{outputRoot}/{Il2CppBackupFolder}";
+
+            if (!Directory.Exists(leftover))
+            {
+                return;
+            }
+
+            if (Directory.Exists(target))
+            {
+                Directory.Delete(leftover, true);
+
+                return;
+            }
+
+            Directory.Move(leftover, target);
+        }
+
+        /// <summary>
         /// 当前 BuildTarget 已是该端且编辑器已装该端模块
         /// </summary>
-        private static bool CanPack(PreBuildValidator.AppPackTarget target)
+        private static bool CanPack(AppPackTarget target)
         {
             BuildTarget buildTarget = PreBuildValidator.GetBuildTarget(target);
             BuildTargetGroup buildTargetGroup = PreBuildValidator.GetBuildTargetGroup(target);
