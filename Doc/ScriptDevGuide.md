@@ -761,12 +761,17 @@ YooAssetManager.Instance.UnLoadScene("Scenes_Battle");
 
 放置：
 
-- FBX 源：`Assets/GameAssets/Models/Fbx/`，只作 Prefab 依赖，不单独寻址
-- 运行时 Prefab：`Assets/GameAssets/Prefabs/Model/`，地址规则与 UI 一致（`Prefabs_{Prefab名}`）
-- 3D 贴图：`Assets/GameAssets/Models/Textures/`（反照率开 sRGB+mipmap；法线/Mask 关 sRGB、开 mipmap）
-- 材质：`GameAssets/Materials/`；动画片段：`GameAssets/Animation/`
+- 每个模型：`Assets/GameAssets/Models/{模型名}/`，内含 FBX、贴图、该模型 URP 材质与动画片段；只被场景引用的预制体也放这里。上述资源只作依赖，不单独寻址。同一目录内 FBX 与预制体分开放：网格在 `FBX/`，新模型预制体在 `Prefabs/`。工程里已有的糖果包预制体目录为 `Prefab/`
+- 场景和其它使用处只挂独立预制体，不直接挂 FBX，不建基于 FBX 的预制体变体。一份预制体只对应一份 FBX；一份 FBX 可对应多份预制体（不同材质等）
+- 按地址动态加载的模型 Prefab：`Assets/GameAssets/Prefabs/Model/`，可按模型分子文件夹（如 `Prefabs/Model/{模型名}/`），地址规则与 UI 一致（`Prefabs_{Prefab名}`）。不按地址加载的模型预制体不放此目录
+- 场景文件放 `GameAssets/Scenes/`，可按模型分子文件夹（如 `Scenes/{模型名}/`）。`.unity` 与 `.scene` 都是场景。场景模型的预制体放 `Models/{名}/Prefabs/`，由场景引用并随场景加载。该模型的 LightingData、lightmap、`.lighting` 留在 `Models/{名}/Scenes/`。按地址加载的单模型预制体放 `Prefabs/Model/{名}/`
+- 网格 FBX 放 `Models/{名}/FBX/`；Animator 与 clip 同放 `Models/{名}/Animations/`，可按角色再分子文件夹
+- 贴图：反照率开 sRGB+mipmap，法线/Mask/AO/Metallic 等线性图关 sRGB、开 mipmap
+- 该模型地形数据与贴图同放 `Models/{名}/Textures/`，地形可再分子文件夹（如 `Textures/Terrain/`）
+- 该模型材质用 `Universal Render Pipeline/Lit` 或 `Universal Render Pipeline/Unlit`，禁止 Standard
+- 公共材质：`GameAssets/Materials/`（如灰度，Main 寻址）；与模型无关的动画片段：`GameAssets/Animation/`，可按用途分子文件夹（如 `Button`）
 
-导入菜单：`VastStarryRiver/资源处理/设置3D模型`。禁止对 3D 贴图跑「设置图片和图集」（该菜单会关 mipmap）。
+整理该模型文件夹时写入导入设置，并把该文件夹内非 URP 的材质与自带 Shader 改成 URP 兼容，不整扫 `GameAssets/Models`。工程内无 3D 模型导入菜单。已是 URP 的跳过。引擎天空盒（如 `Skybox/Procedural`）视为已兼容。`Standard` / 镜面 Standard 挂 `Universal Render Pipeline/Lit` 并搬对得上的贴图槽；名称含 Unlit 且不是粒子/天空盒挂 `Universal Render Pipeline/Unlit`；粒子挂 `Universal Render Pipeline/Particles/Unlit`；地形挂 `Universal Render Pipeline/Terrain/Lit`；其余非 URP 材质挂 Lit。自带 Built-in Shader 改成 URP（`UniversalPipeline` + Forward），保留原 Shader 名以免材质掉引用。导入设置写完后再扫一遍该包材质。已烘网格（该 FBX `generateSecondaryUV`，或本包有 `LightingData` / `Lightmap*`）不改切线、压缩、可读、材质导入与动画开关，只关碰撞/相机/灯。普通网格走压缩、不可读、切线 None、不导 FBX 自带材质，不强行打开动画导入。lightmap / probe / `Scenes` 下烘焙图不处理。普通贴图写 sRGB/线性、mipmap 与三端 ASTC。设置未变不 Reimport。禁止对 3D 贴图跑「设置图片和图集」（该菜单会关 mipmap）。
 
 加载：
 
@@ -777,7 +782,7 @@ YooAssetManager.Instance.AsyncLoadAsset<GameObject>("Prefabs_SomeModel", prefab 
 });
 ```
 
-不要用 `Utils.OpenUIPrefabPanel` 开 3D 物体。3D 世界相机放热更场景 `GameAssets/Scenes/`，不进 `Start.scene`。固定绑定的 `MeshRenderer` / `SkinnedMeshRenderer` / `Animation` / `Animator` 用 public 字段拖引用。LOD 命名 `_LOD0` `_LOD1` `_LOD2`。
+不要用 `Utils.OpenUIPrefabPanel` 开 3D 物体。`Start.scene` 的 `Main Camera` 是常驻 Base（`InvariableConst.MainCameraPath`，经 `Utils.MainCamera` 访问）。热更场景可自带相机节点作位姿源，Camera 组件须关闭，由业务把 transform 写到 `Utils.MainCamera`。禁止再开第二台启用的场景 Camera 与常驻 Base 抢画。固定绑定的 `MeshRenderer` / `SkinnedMeshRenderer` / `Animation` / `Animator` 用 public 字段拖引用。LOD 命名 `_LOD0` `_LOD1` `_LOD2`。
 
 ### 9.6 资源加载检查清单
 

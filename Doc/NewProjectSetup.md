@@ -9,7 +9,7 @@
 3. Package Manager 会按 `Packages/manifest.json` 拉取依赖（含 UOS CDN / CloudSave / Func Stateless / Launcher、YooAsset、HybridCLR、NuGetForUnity 等）。若有 git 包拉取失败，检查网络与凭据后重试。
 4. 使用 NuGetForUnity 还原 `Newtonsoft.Json`（与云函数、云存档 JSON 序列化相关）。
 5. 打开 Console，确认**无编译错误**后再进入后续步骤。若出现 `UOSSettings` 相关加载异常，先完成第 5 章「UOS Launcher 重新 Link」，或按编辑器提示使用 `UOS/Launcher/Fix settings by reimport` / `UOS/Launcher/Fix settings by delete`。
-6. HybridCLR 包为 `com.code-philosophy.hybridclr#v8.14.1`。换引擎大版本后打开 `HybridCLR/Installer` 重新安装，再执行 `HybridCLR/Generate/All`。
+6. HybridCLR 包为 `com.code-philosophy.hybridclr#v8.14.1`。换引擎大版本后打开 `HybridCLR/Installer` 重新安装，再执行 `HybridCLR/Generate/All`。安卓导出 HybridCLR DLL 或打安卓包时，`Packages/manifest.json` 须保留 `com.unity.modules.androidjni`（UOS Launcher 真机 Android 包装依赖 `AndroidJavaProxy` / `AndroidJavaObject`）。
 7. 团结 External Tools 核对本机 OpenHarmony SDK / Node / JDK（打鸿蒙包需要）。不在工程里写本机路径。
 
 ---
@@ -101,6 +101,10 @@ https://uos-save-bluecloud-1301389817.cos.ap-shanghai.myqcloud.com
 - 鸿蒙证书 / Profile
 
 未配置时打包菜单只警告，不硬拦。
+
+### 4.4 安卓 Gradle 仓库
+
+`Assets/Plugins/Android/settingsTemplate.gradle` 随工程走：Gradle 插件与依赖先解析阿里云 `google` / `central` / `gradle-plugin` / `public`，再回落官方源。`ProjectSettings` 中 `useCustomGradleSettingsTemplate` 须为开启。UOS Launcher 注入的 `Android_CN_OAID` 走工程内 `Assets/Editor/MyTools/CustomBuild/CustomAndroidBuild/AndroidLocalMaven`，由 `AndroidGradleLocalMaven` 写入导出工程的 `localMaven`。新工程沿用这些文件即可，不必再配本机 `~/.gradle/init.gradle`。苹果与鸿蒙打包不读此模板。
 
 ---
 
@@ -297,6 +301,7 @@ private const string CloudSaveGameId = "{新GameId}"; // 必须与 CloudHelper.S
 - [ ] Func Stateless 面板：云函数已上传且为远程模式
 - [ ] UOS 控制台已给 `ResetDayRank` 配置日榜定时触发器 cron `0 5 * * *`（需正式用户，cron 时区 UTC+8）
 - [ ] 三端包名为 `{包名}`，安卓含 ARM64，安卓/鸿蒙已开网络权限
+- [ ] `useCustomGradleSettingsTemplate` 已开启，且存在 `Assets/Plugins/Android/settingsTemplate.gradle`
 - [ ] Console 无编译错误
 
 ### 9.2 真机 / 平台侧（三端均测）
@@ -348,8 +353,7 @@ private const string CloudSaveGameId = "{新GameId}"; // 必须与 CloudHelper.S
 ### 资源处理
 
 - `VastStarryRiver/资源处理/设置音频资源`（按 `Audios/Bgm` 与 `Audios/Sfx` 分别设置 CompressedInMemory / DecompressOnLoad，Sfx 强制 Force To Mono，Bgm 不改）
-- `VastStarryRiver/资源处理/设置图片和图集`（Atlas 图集压缩/关可读；Atlas 源图与 Png 散图统一最佳模式：强制 Sprite、关可读、关 mipmap、压缩；三端 ASTC；不扫 `Models/Textures`）
-- `VastStarryRiver/资源处理/设置3D模型`（FBX 网格/动画导入；3D 贴图 sRGB/mipmap 与三端 ASTC）
+- `VastStarryRiver/资源处理/设置图片和图集`（Atlas 图集压缩/关可读；Atlas 源图与 Png 散图统一最佳模式：强制 Sprite、关可读、关 mipmap、压缩；三端 ASTC；不扫 `GameAssets/Models`）
 
 ### 构建
 
@@ -358,9 +362,9 @@ private const string CloudSaveGameId = "{新GameId}"; // 必须与 CloudHelper.S
 ### 打包
 
 - `VastStarryRiver/打包/复制bundle到CDN目录`
-- `VastStarryRiver/打包/打包安卓`
-- `VastStarryRiver/打包/打包苹果`
-- `VastStarryRiver/打包/打包鸿蒙`
+- `VastStarryRiver/打包/打包安卓`（当前已是 `Android` 且已装模块时可点）
+- `VastStarryRiver/打包/打包苹果`（当前已是 `iOS` 且已装模块时可点）
+- `VastStarryRiver/打包/打包鸿蒙`（当前已是 `OpenHarmony` 且已装模块时可点）
 
 ### UOS
 

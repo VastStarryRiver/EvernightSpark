@@ -14,6 +14,8 @@ namespace Invariable
     public class Utils
     {
         private static Camera[] m_uiCamera = null;
+        private static Light m_uiLight = null;
+        private static Camera m_mainCamera = null;
         private static RectTransform m_uiRoot = null;
         private static Dictionary<string, Sprite> m_remoteSpriteCache = null;
         private static RectTransform[] m_panelParents = null;
@@ -33,6 +35,26 @@ namespace Invariable
                 };
 
                 return m_uiCamera;
+            }
+        }
+
+        public static Light UILight
+        {
+            get
+            {
+                m_uiLight ??= GameObject.Find(InvariableConst.UILightPath).GetComponent<Light>();
+
+                return m_uiLight;
+            }
+        }
+
+        public static Camera MainCamera
+        {
+            get
+            {
+                m_mainCamera ??= GameObject.Find(InvariableConst.MainCameraPath).GetComponent<Camera>();
+
+                return m_mainCamera;
             }
         }
 

@@ -156,7 +156,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_isNotChangeScale: 0
-  m_changeScale: 1.1
+  m_scaleType: 1
+  m_audioClip: {fileID: 0}
   m_clickEvent:
     m_PersistentCalls:
       m_Calls: []
@@ -210,7 +211,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 200}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 890, y: 713}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!225 &362471789142142637
@@ -1224,7 +1225,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_isNotChangeScale: 0
-  m_changeScale: 1.1
+  m_scaleType: 1
+  m_audioClip: {fileID: 0}
   m_clickEvent:
     m_PersistentCalls:
       m_Calls: []

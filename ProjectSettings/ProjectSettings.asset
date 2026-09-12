@@ -9,7 +9,7 @@ PlayerSettings:
   hmiUseInternalProfiler: 0
   AndroidFilterTouchesWhenObscured: 0
   AndroidEnableSustainedPerformanceMode: 0
-  defaultScreenOrientation: 0
+  defaultScreenOrientation: 3
   targetDevice: 2
   useOnDemandResources: 0
   accelerometerFrequency: 60
@@ -207,7 +207,7 @@ PlayerSettings:
     VisionOS: 0
     iPhone: 0
     tvOS: 0
-  overrideDefaultApplicationIdentifier: 1
+  overrideDefaultApplicationIdentifier: 0
   AndroidBundleVersionCode: 1
   AndroidMinSdkVersion: 23
   AndroidTargetSdkVersion: 34
@@ -304,7 +304,7 @@ PlayerSettings:
   useCustomLauncherGradleManifest: 0
   useCustomBaseGradleTemplate: 0
   useCustomGradlePropertiesTemplate: 0
-  useCustomGradleSettingsTemplate: 0
+  useCustomGradleSettingsTemplate: 1
   useCustomProguardFile: 0
   AndroidTargetArchitectures: 3
   AndroidTargetDevices: 0
@@ -334,7 +334,7 @@ PlayerSettings:
   - m_BuildTarget: 
     m_Icons:
     - serializedVersion: 2
-      m_Icon: {fileID: 2800000, guid: b6f5f767a93984a499d155328b848934, type: 3}
+      m_Icon: {fileID: 2800000, guid: b411cd3a7cb7b614fb529b5c9c20180e, type: 3}
       m_Width: 128
       m_Height: 128
       m_Kind: 0
@@ -1261,7 +1261,8 @@ PlayerSettings:
   forceOpenHarmonyInternetPermission: 1
   forceOpenHarmonySDCardPermission: 0
   openHarmonyUseLowAccuracyLocation: 0
-  openHarmonyPredefinedPermissions: []
+  openHarmonyPredefinedPermissions:
+  - ohos.permission.APP_TRACKING_CONSENT
   openHarmonyUseTuanjieLogo: 1
   openHarmonyLaunchImage: {fileID: 0}
   openHarmonyLaunchBackgroundColor: {r: 0.13725491, g: 0.12156863, b: 0.1254902, a: 1}
@@ -1305,7 +1306,7 @@ PlayerSettings:
   weixinMiniGameInjectStrippedMethodLogger: 0
   weixinMiniGameEnableDotNetWasmExceptionHandling: 1
   weixinMiniGamePreserveEventDelegate: 0
-  activeSubplatform: 1
+  activeSubplatform: 0
   serializedFileTypeTreeMemoryOptimization: 0
   stripBuiltinResources: 0
   minigameMTRendering: 0

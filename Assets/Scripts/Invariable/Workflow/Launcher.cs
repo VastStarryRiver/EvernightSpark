@@ -47,6 +47,7 @@ namespace Invariable
 
             stateMachine.SetBlackboardValue("EPlayMode", m_playMode);
 
+            SetDontDestroyOnLoad(InvariableConst.MainCameraPath);
             SetDontDestroyOnLoad(InvariableConst.UIRootPath);
 
             ShowHotUpdatePanel();

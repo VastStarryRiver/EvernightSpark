@@ -11,9 +11,9 @@
 
 切平台只切 `EditorUserBuildSettings.SwitchActiveBuildTarget`（`Android` / `iOS` / `OpenHarmony`）。不使用 Build Profile，也不使用 `SetActiveSubplatform`。运行时前缀、`GameAssets/DLL` 与本机 `CDN` / `Build` 子目录为 `Android` / `iOS` / `OpenHarmony`。编辑器 `BuildTarget.iOS.ToString()` 为 `iOS`，与 HybridCLR、YooAsset 输出及本机目录同名。贴图导入平台名仍为 `iPhone`。
 
-打包菜单先切到对应 `BuildTarget`，再跑 `PreBuildValidator`，最后 `BuildPipeline.BuildPlayer`。硬拦字段：目标端 `CDNPathAndroid` / `CDNPathiOS` / `CDNPathOpenHarmony`、`CloudHelper.Secrets.GameId`、`activeBuildTarget`、目标 `IL2CPP`、安卓 `ARM64`、安卓 `forceInternetPermission`、鸿蒙 `forceOpenHarmonyInternetPermission`、`GetApplicationIdentifier` 包名非空。签名证书只警告。远程调用模式须由用户在 UOS / Func Stateless 面板自行确认。
+先切到对应 `BuildTarget`。打包菜单仅在当前端已对齐且已装模块时可点，再跑 `PreBuildValidator`，最后 `BuildPipeline.BuildPlayer`。硬拦字段：目标端 `CDNPathAndroid` / `CDNPathiOS` / `CDNPathOpenHarmony`、`CloudHelper.Secrets.GameId`、`activeBuildTarget`、目标 `IL2CPP`、安卓 `ARM64`、安卓 `forceInternetPermission`、鸿蒙 `forceOpenHarmonyInternetPermission`、`GetApplicationIdentifier` 包名非空。签名证书只警告。远程调用模式须由用户在 UOS / Func Stateless 面板自行确认。
 
-本机是 Windows 时可打安卓 APK、导出鸿蒙工程；完整 iOS / Xcode / IPA 通常需要 Mac。未安装对应模块时菜单明确失败，不会空成功。Google Play AAB 不设单独菜单，需要时在 Player Settings 改 `buildAppBundle` 后自行出包。
+本机是 Windows 时可打安卓 APK、导出鸿蒙工程；完整 iOS / Xcode / IPA 通常需要 Mac。未安装对应模块时该端打包菜单不可点。Google Play AAB 不设单独菜单，需要时在 Player Settings 改 `buildAppBundle` 后自行出包。
 
 ## 2. `SdkManager` 平台能力
 
@@ -78,7 +78,7 @@ Assets/GameAssets/DLL/{Android|iOS|OpenHarmony}/
 
 Collector DLL 组地址规则为 `AddressByFolderAndFileName`，运行时地址为 `{平台}_{文件名}`，例如 `Android_HotUpdate.dll`。`YooAssetManager` 用 `SdkManager.Instance.GetDllPlatform()` 拼前缀，闲置释放白名单同步该前缀。
 
-AOT 清单单一事实源：`InvariableConst.AotDllNames`。
+AOT 清单单一事实源：`InvariableConst.AotDllNames`。团结 iOS 导出工程名为 `Tuanjie-iPhone`。UOS PostProcess 读取 `Unity-iPhone.xcodeproj`。本工程 `IosXcodeProjShim` 在 PostProcess 87 / 89 对齐两份 `project.pbxproj`。Windows 上可导出该端 HybridCLR DLL，完整 IPA 通常需要 Mac。
 
 ## 7. YooAsset 构建
 
@@ -86,7 +86,7 @@ AOT 清单单一事实源：`InvariableConst.AotDllNames`。
 
 参数（本机 EditorPrefs，不进 git）：LZ4、无 Bundle 加密、`BuildinFileCopyOption.None`。新机器打开工程后核一次。
 
-贴图：`VastStarryRiver/资源处理/设置图片和图集` 为 UI 图写入 Default 压缩与 Android / iPhone / OpenHarmony ASTC，并关闭 mipmap。该菜单不得扫 `Models/Textures`。3D 贴图走 `VastStarryRiver/资源处理/设置3D模型`。
+贴图：`VastStarryRiver/资源处理/设置图片和图集` 为 UI 图写入 Default 压缩与 Android / iPhone / OpenHarmony ASTC，并关闭 mipmap。该菜单不得扫 `GameAssets/Models`。3D 贴图在整理该模型文件夹时写入导入设置，不整扫 `GameAssets/Models`。
 
 每端纹理格式进包，必须在目标平台重打 Bundle。
 
@@ -102,19 +102,21 @@ AOT 清单单一事实源：`InvariableConst.AotDllNames`。
 
 输出：`Build/Android/{productName}.apk`。本轮打 APK（侧载/国内渠道）。需要 AAB 时在编辑器改 `buildAppBundle` 后自行出包。
 
-打包前切到 `BuildTarget.Android`。安卓须 IL2CPP、ARMv7+ARM64、强制网络权限、包名非空。keystore 本机填写，未配置只警告。
+打包菜单仅在当前 `BuildTarget` 已是 `Android` 且已装模块时可点，先切平台再点。安卓须 IL2CPP、含 ARM64、强制网络权限、包名非空。keystore 本机填写，未配置只警告。
+
+Gradle 插件与依赖经 `Assets/Plugins/Android/settingsTemplate.gradle` 解析：`pluginManagement` 与 `dependencyResolutionManagement` 均先走阿里云 `google` / `central` / `gradle-plugin` / `public`，再回落到 `gradlePluginPortal()` / `google()` / `mavenCentral()`。`ProjectSettings` 中 `useCustomGradleSettingsTemplate` 须为开启，否则编辑器忽略该文件。UOS Launcher 注入的 `Android_CN_OAID` 坐标由 `AndroidGradleLocalMaven` 在导出工程写入 `localMaven`（源在 `Assets/Editor/MyTools/CustomBuild/CustomAndroidBuild/AndroidLocalMaven`），避免打包时访问 `jitpack.io`。
 
 ## 10. 苹果构建
 
 菜单：`VastStarryRiver/打包/打包苹果`。
 
-输出：`Build/iOS`（Xcode 工程）。Windows 上若未安装 iOS 模块则明确失败。切到 `BuildTarget.iOS` 后仍可在本机导出该端 HybridCLR DLL 与 YooAsset Bundle。完整 IPA 通常需要 Mac。Team / 描述文件本机填写，未配置只警告。
+输出：`Build/iOS`（Xcode 工程）。打包菜单仅在当前 `BuildTarget` 已是 `iOS` 且已装模块时可点，先切平台再点。未装 iOS 模块时该菜单不可点。切到 `BuildTarget.iOS` 后仍可在本机导出该端 HybridCLR DLL 与 YooAsset Bundle。完整 IPA 通常需要 Mac。Team / 描述文件本机填写，未配置只警告。不经 Android Gradle，不读 `settingsTemplate.gradle`。
 
 ## 11. 鸿蒙构建
 
 菜单：`VastStarryRiver/打包/打包鸿蒙`。
 
-输出：`Build/OpenHarmony` 导出工程，再走 DevEco 安装。须 IL2CPP、强制网络权限、包名非空。证书与 Profile 本机填写，未配置只警告。团结 External Tools 需本机已配 OpenHarmony SDK / Node / JDK。
+输出：`Build/OpenHarmony` 导出工程，再走 DevEco 安装。打包菜单仅在当前 `BuildTarget` 已是 `OpenHarmony` 且已装模块时可点，先切平台再点。须 IL2CPP、强制网络权限、包名非空。证书与 Profile 本机填写，未配置只警告。团结 External Tools 需本机已配 OpenHarmony SDK / Node / JDK。不经 Android Gradle，不读 `settingsTemplate.gradle`。
 
 ## 12. 推荐的完整构建顺序
 
@@ -158,6 +160,7 @@ AOT 清单单一事实源：`InvariableConst.AotDllNames`。
 |---|---|---|---|---|
 | 进游戏（无云） | 必测 | — | — | — |
 | Linear 下 MainPanel 明暗 | 必测 | — | — | — |
+| URP 下 UI 相机与 TMP 不粉 | 必测 | — | — | — |
 | 设备访客登录 | — | 必测 | 必测 | 必测 |
 | 云存档读写 | — | 必测 | 必测 | 必测 |
 | CDN 热更 | — | 必测 | 必测 | 必测 |

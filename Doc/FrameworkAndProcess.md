@@ -4,7 +4,7 @@
 
 | 类别 | 技术/版本 | 用途 | 依赖形态 |
 |---|---|---|---|
-| 引擎 | 团结引擎 1.9.3 / Unity 2022.3.62t11 | 游戏运行与安卓 / 苹果 / 鸿蒙构建 | 引擎本体；内置管线 + Linear |
+| 引擎 | 团结引擎 1.9.3 / Unity 2022.3.62t11 | 游戏运行与安卓 / 苹果 / 鸿蒙构建 | 引擎本体；URP 14.2.0-t1 + Linear |
 | 热更新 | HybridCLR 8.14.1 | 运行时加载 `HotUpdate.dll` | UPM 包（`#v8.14.1`）；生成物在 `Assets/HybridCLRGenerate/`；本地 il2cpp 为 `v2022-tuanjie-8.14.0` |
 | 资源系统 | YooAsset 2.3.19 | Bundle、清单、下载、缓存和异步资源加载 | UPM 包；真机 HostPlayMode |
 | 异步 | UniTask 2.5.10 | 异步方法（`CloudManager` 云存档链路 async/await） | `Assets/ToolPackage/UniTask` 本地源码 |
@@ -97,7 +97,7 @@
 - HybridCLR DLL 生成与复制；
 - YooAsset Bundle 构建；
 - 安卓 / 苹果 / 鸿蒙打包；
-- 音频/图集/3D 模型导入设置（`AssetProcess`）；
+- 音频/图片/图集导入设置（`AssetProcess`）；
 - 图集和 `.bin` 导入；
 - UIButton 自定义 Inspector（`InspectorEditor/UIButtonEditor.cs`）。
 
@@ -113,17 +113,22 @@ Assets/Scenes/Start.scene
 
 场景提供：
 
+- `Main Camera`：场景 Base 相机，负责清屏与 3D；
 - `UI_Root`；
 - `Canvas_0` 到 `Canvas_3`；
-- 每层的 `UI_Camera`；
+- 每层的 `UI_Camera`（URP Overlay，按 Canvas_0 到 Canvas_3 叠在常驻 `Main Camera` 的 Camera Stack）；
 - 每层的 `Ts_Panel` 页面挂载点；
+- `UI_Light`（Directional）；
 - `EventSystem`；
-- `Launcher` 启动组件。
+- `Launcher` 启动组件（挂在 `UI_Root` 上）。场景无独立 `Main Light` 节点。
+
+`Launcher` 把 `Main Camera` 与 `UI_Root` 设为 `DontDestroyOnLoad`，场景 Base 与 UI Overlay 跨场景存活。`MainPanel` 用 `LoadSceneMode.Single` 加载 `Scenes_CandyScene_day`，把 `CandyScene_day_Camera` 的 `localPosition` / `localRotation` / `localScale` 写到 `Utils.MainCamera`，并隐藏 `m_objBG`。业务场景相机节点保留，Camera 组件关闭，不参与渲染，只作位姿源。`Find("CandyScene_day_Camera")` 无空判，节点改名会空引用。
 
 UI 约定：
 
 ```text
 UI_Root/
+├─ UI_Light
 ├─ Canvas_0/
 │  ├─ UI_Camera
 │  └─ Ts_Panel
@@ -138,7 +143,7 @@ UI_Root/
    └─ Ts_Panel
 ```
 
-代码通过 `Utils.UICamera` / `Utils.UIRoot` 等属性访问这些固定路径，重命名节点时必须同步检查：
+代码通过 `Utils.MainCamera` / `Utils.UILight` / `Utils.UICamera` / `Utils.UIRoot` 访问这些固定路径（`UICamera` 为长度 4 的数组，下标对应 Canvas_0 到 Canvas_3），重命名节点时必须同步检查：
 
 - `Launcher.cs`
 - `Utils.cs`
@@ -202,7 +207,7 @@ HotUpdateOver
 同时：
 
 - 将 `EPlayMode` 写入状态机黑板；
-- 对 `UI_Root` 调用 `DontDestroyOnLoad`；
+- 对 `Main Camera` 与 `UI_Root` 调用 `DontDestroyOnLoad`；
 - 查找本地加载面板；
 - 若不存在，从 `Resources/LocalAssets/HotUpdatePanel` 实例化；
 - 从 `InitializeYooAsset` 开始执行。
@@ -303,7 +308,7 @@ method.Invoke(null, null);
 Utils.OpenUIPrefabPanel("MainPanel", 0);
 ```
 
-进入前由 `HotUpdateOver` 提示“即将进入游戏...”。`MainPanel.Awake` 触发 `Launcher_StartGame`，销毁加载面板和 Launcher。
+进入前由 `HotUpdateOver` 提示“即将进入游戏...”。`MainPanel.Awake` 触发 `Launcher_StartGame`，销毁加载面板和 Launcher。`MainPanel.Start` 播放 BGM 与按钮动画。`OnTestClick1` 以 `LoadSceneMode.Single` 加载 `Scenes_CandyScene_day` 后同步场景相机位姿并隐藏 `m_objBG`。`OnTestClick2` 实例化 `Prefabs_EvilMage`。`OnTestClick3` 在配置回调里把 `m_textTest` 写成「写入云数据」并 `SetCloudData("Param", ...)`，同时立刻 `SetCloudData("Score", "100")` 与 `ReportRankScore("Score", 100)`。`OnTestClick4` 用 `GetCloudData("Param")` 刷新 `m_textTest`。
 
 ## 5. HybridCLR DLL 加载
 
@@ -386,8 +391,9 @@ Assets/AssetBundleCollectorSetting.asset
 | Atlas | `GameAssets/Atlas/Atlas01`、`Atlas02`、`Atlas03`（逐目录注册，非通配；新图集目录需手动加收集器） | Depend | 无独立地址 | PackCollector |
 | Audios | `GameAssets/Audios` | Depend | 无独立地址 | PackGroup |
 | Materials | `GameAssets/Materials` | Main | Group + FileName | PackGroup |
+| Models | `GameAssets/Models` | Depend | 无独立地址 | PackGroup |
 | Png | `GameAssets/Png` | Depend | 无独立地址 | PackGroup |
-| Prefabs | `GameAssets/Prefabs/UI`、`GameAssets/Prefabs/Model` | Main | Group + FileName | PackCollector |
+| Prefabs | `GameAssets/Prefabs/UI`、`GameAssets/Prefabs/Model`（Model 只放按地址加载的 3D 预制体） | Main | Group + FileName | PackCollector |
 | Scenes | `GameAssets/Scenes` | Main | Group + FileName | PackGroup |
 | Config | `GameAssets/Config` | Main | Group + FileName | PackGroup |
 | DLL | `GameAssets/DLL` | Main | Folder + FileName | PackGroup |
@@ -404,7 +410,7 @@ Assets/AssetBundleCollectorSetting.asset
 | 配置表 bytes | `Config_{表名}`（如 `Config_Player`） |
 | 热更新 DLL | `{平台}_HotUpdate.dll` |
 
-图集为 Depend 模式，仅作 Prefab 依赖进包，无独立地址。业务脚本声明 `public SpriteAtlas` 并在 Inspector 挂载，按名 `GetSprite` 后直接赋值。单张图片声明 `public Sprite` 挂载，直接赋值。动画挂载到 Animation 组件，代码 `animation.Play("animName")`。`VastStarryRiver/资源处理/设置图片和图集` 菜单批量设置 UI 导入参数：图集压缩并关可读，Atlas 源图与 Png 散图统一最佳模式（强制 Sprite、关可读、关 mipmap、压缩，三端 ASTC）。3D 贴图走 `VastStarryRiver/资源处理/设置3D模型`，不要对该目录关 mipmap。FBX 源在 `GameAssets/Models/Fbx/`，只作 Prefab 依赖。
+图集为 Depend 模式，仅作 Prefab 依赖进包，无独立地址。业务脚本声明 `public SpriteAtlas` 并在 Inspector 挂载，按名 `GetSprite` 后直接赋值。单张图片声明 `public Sprite` 挂载，直接赋值。动画挂载到 Animation 组件，代码 `animation.Play("animName")`。`VastStarryRiver/资源处理/设置图片和图集` 菜单批量设置 UI 导入参数：图集压缩并关可读，Atlas 源图与 Png 散图统一最佳模式（强制 Sprite、关可读、关 mipmap、压缩，三端 ASTC）。3D 贴图在整理该模型文件夹时写入 sRGB/mipmap 与三端 ASTC，不要对 `GameAssets/Models` 跑设置图片和图集（会关 mipmap）。整理该文件夹时，非 URP 材质按 Standard→Lit、Unlit→Unlit、粒子/地形对位、其余挂 Lit；自带 Built-in Shader 改成 URP 并保留原名；引擎天空盒 Procedural 视为已兼容。每个模型放在 `GameAssets/Models/{模型名}/`，含 FBX、贴图、该模型材质与动画，只作 Prefab 依赖。场景和其它使用处只挂独立预制体，不直接挂 FBX，不建基于 FBX 的预制体变体；同一目录内 FBX 与预制体分开放，新模型预制体目录为 `Prefabs/`。公共材质在 `GameAssets/Materials`，与模型无关的动画片段在 `GameAssets/Animation`。
 
 图集构建工具：
 
@@ -432,6 +438,8 @@ Assets/AssetBundleCollectorSetting.asset
 
 `AsyncLoadScene`：
 
+- 缓存句柄对应场景仍加载时立刻回调该 `Scene`（`Single` 时仍清池）；
+- 同地址在途不去重；
 - `Additive` 模式直接加载目标场景；
 - `Single` 模式先逐个卸载其他已缓存场景，再加载目标场景；加载完成后调用 `PoolUtils.ClearAllGameObjectPools()` 清空 GameObject 池；
 - 缓存句柄对应场景已卸载时释放该句柄并重新加载；
@@ -700,7 +708,7 @@ ConfigManager.ClearAll();
 
 主要能力：
 
-- 固定 UI Camera、UI Root 查找（`Utils.UICamera` / `Utils.UIRoot`，路径常量来自 `InvariableConst`）；
+- 固定节点查找：`Utils.MainCamera`、`Utils.UILight`、`Utils.UIRoot`、`Utils.UICamera`（`Camera[4]`，对应 Canvas_0 到 Canvas_3），路径常量来自 `InvariableConst`（`MainCameraPath` / `UILightPath` / `UICameraPath_0..3` / `UIPanelPath_0..3`）；
 - GameObject/Transform 获取和克隆、`HideAllChildren`；
 - 远程头像 URL 走 `SetRemoteImage`（下载为 Texture2D 后赋 `Image.sprite` / `RawImage.texture`）；图集不走 Utils，由业务脚本挂载 `SpriteAtlas` 后 `GetSprite` 赋值（见 §6）；
 - 灰度材质（`SetGray`）；

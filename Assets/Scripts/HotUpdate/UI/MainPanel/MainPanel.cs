@@ -1,10 +1,8 @@
-using CloudService;
 using DG.Tweening;
 using Invariable;
-using System.Text;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 
 
@@ -14,10 +12,8 @@ namespace HotUpdate
     {
         public RectTransform m_tsTest;
         public TextMeshProUGUI m_textTest;
-        public Image m_imgTest;
         public AudioClip m_audioBGM;
-
-        private static bool m_hasReportedRank;
+        public GameObject m_objBG;
 
 
 
@@ -49,30 +45,8 @@ namespace HotUpdate
         {
             m_tsTest.DOAnchorPos(Vector2.zero, 1f).SetTarget(m_tsTest).SetEase(Ease.InSine).OnComplete(() =>
             {
-                m_tsTest.DOAnchorPos(new Vector2(0, -500), 1f).SetTarget(m_tsTest).SetEase(Ease.OutSine);
+                m_tsTest.DOAnchorPos(new Vector2(0, -200), 1f).SetTarget(m_tsTest).SetEase(Ease.OutSine);
             });
-        }
-
-        /// <summary>
-        /// 本局仅上报一次排行榜数据，之后不再上报
-        /// </summary>
-        private void ReportRankScore()
-        {
-            if (m_hasReportedRank)
-            {
-                return;
-            }
-
-            m_hasReportedRank = true;
-
-            string scoreText = SdkManager.Instance.GetCloudData("Score", "0");
-
-            if (!double.TryParse(scoreText, out double score))
-            {
-                return;
-            }
-
-            CloudManager.Instance.ReportRankScore("Score", score);
         }
 
 
@@ -82,17 +56,16 @@ namespace HotUpdate
         /// </summary>
         public void OnTestClick1()
         {
-            string str = SdkManager.Instance.GetCloudData("Test1", "");
+            YooAssetManager.Instance.AsyncLoadScene("Scenes_CandyScene_day", LoadSceneMode.Single, (scene) =>
+            {
+                Transform trans = GameObject.Find("CandyScene_day_Camera").transform;
 
-            if (string.IsNullOrEmpty(str))
-            {
-                SdkManager.Instance.SetCloudData("Test1", "测试数据1");
-                m_textTest.text = "写入测试数据1";
-            }
-            else
-            {
-                m_textTest.text = str;
-            }
+                Utils.MainCamera.transform.localPosition = trans.localPosition;
+                Utils.MainCamera.transform.localRotation = trans.localRotation;
+                Utils.MainCamera.transform.localScale = trans.localScale;
+
+                m_objBG.SetActive(false);
+            });
         }
 
         /// <summary>
@@ -100,9 +73,13 @@ namespace HotUpdate
         /// </summary>
         public void OnTestClick2()
         {
-            SdkManager.Instance.SetCloudData("Score", "100");
-            ReportRankScore();
-            m_textTest.text = "上传排行榜积分";
+            YooAssetManager.Instance.AsyncLoadAsset<GameObject>("Prefabs_EvilMage", (asset) =>
+            {
+                Transform trans = GameObject.Instantiate(asset, transform).transform;
+                trans.localPosition = new Vector3(7526, 1085, -1783);
+                trans.localRotation = Quaternion.Euler(0, 65, 0);
+                trans.localScale = new Vector3(800, 800, 800);
+            });
         }
 
         /// <summary>
@@ -117,8 +94,13 @@ namespace HotUpdate
                     return;
                 }
 
-                m_textTest.text = config.Param.ToString();
+                m_textTest.text = "写入云数据";
+
+                SdkManager.Instance.SetCloudData("Param", config.Param.ToString());
             });
+
+            SdkManager.Instance.SetCloudData("Score", "100");
+            CloudManager.Instance.ReportRankScore("Score", 100);
         }
 
         /// <summary>
@@ -126,49 +108,7 @@ namespace HotUpdate
         /// </summary>
         public void OnTestClick4()
         {
-            CloudManager.Instance.GetRankList("Score", CloudRankTypes.World, (list) =>
-            {
-                if (this == null || m_textTest == null)
-                {
-                    return;
-                }
-
-                StringBuilder str = new StringBuilder();
-                str.Append("排行榜数据如下：");
-
-                if (list == null)
-                {
-                    m_textTest.text = str.ToString();
-
-                    return;
-                }
-
-                for (int i = 0; i < list.Count; i++)
-                {
-                    string score = "";
-                    string nickName = "";
-                    string avatarUrl = "";
-
-                    if (list[i] != null)
-                    {
-                        nickName = list[i].NickName ?? "";
-                        avatarUrl = list[i].AvatarUrl ?? "";
-
-                        if (list[i].Data != null)
-                        {
-                            list[i].Data.TryGetValue("Score", out score);
-                        }
-                    }
-
-                    str.Append($"\n序号：{i}\n积分：{score}\n昵称：{nickName}");
-
-                    if (i == 0 && !string.IsNullOrEmpty(avatarUrl))
-                    {
-                        Utils.SetRemoteImage(m_imgTest, "", avatarUrl, false, null);
-                    }
-                }
-                m_textTest.text = str.ToString();
-            });
+            m_textTest.text = SdkManager.Instance.GetCloudData("Param", "无云数据");
         }
     }
 }

@@ -213,7 +213,7 @@ namespace Invariable
         /// <param name="address">场景地址</param>
         /// <param name="loadSceneMode">场景加载模式</param>
         /// <param name="callBack">加载完成回调</param>
-        public void AsyncLoadScene(string address, LoadSceneMode loadSceneMode, Action<Scene> callBack)
+        public void AsyncLoadScene(string address, LoadSceneMode loadSceneMode, Action<Scene> callBack = null)
         {
             m_sceneHandles ??= new Dictionary<string, SceneHandle>();
 
