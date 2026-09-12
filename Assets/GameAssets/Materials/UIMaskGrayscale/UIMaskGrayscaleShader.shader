@@ -2,7 +2,7 @@ Shader "MyShader/UIMaskGrayscale"
 {
     Properties
     {
-        _MainTex ("Base (RGB)", 2D) = "white" {}
+        [PerRendererData] _MainTex ("Base (RGB)", 2D) = "white" {}
         _StencilComp ("Stencil Comparison", Float) = 8
         _Stencil ("Stencil ID", Float) = 0
         _StencilOp ("Stencil Operation", Float) = 0
@@ -21,6 +21,7 @@ Shader "MyShader/UIMaskGrayscale"
             "RenderType"="Transparent"
             "PreviewType"="Plane"
             "CanUseSpriteAtlas"="True"
+            "RenderPipeline"="UniversalPipeline"
         }
 
         Stencil
@@ -32,76 +33,79 @@ Shader "MyShader/UIMaskGrayscale"
             WriteMask [_StencilWriteMask]
         }
 
+        Cull Off
+        ZWrite Off
+        ZTest [unity_GUIZTestMode]
+        Blend SrcAlpha OneMinusSrcAlpha
         ColorMask [_ColorMask]
 
         Pass
         {
-            Blend SrcAlpha OneMinusSrcAlpha
-            Cull Off
-            ZWrite Off
-            ZTest [unity_GUIZTestMode]
-
-            HLSLPROGRAM
-            #pragma vertex vert
-            #pragma fragment frag
-            #pragma multi_compile __ UNITY_UI_CLIP_RECT
-            #pragma multi_compile __ UNITY_UI_ALPHACLIP
-            
-            #include "UnityCG.cginc"
-            #include "UnityUI.cginc"
-
-            sampler2D _MainTex;
-            float4 _MainTex_ST;
-            float4 _ClipRect;
-
-            struct appdata
+            Name "UIMaskGrayscale"
+            Tags
             {
-                float4 vertex : POSITION;
-                float2 uv : TEXCOORD0;
-                float4 color : COLOR;
-                float3 normal : NORMAL;
-            };
-
-            struct v2f
-            {
-                float4 pos : SV_POSITION;
-                float2 uv : TEXCOORD0;
-                float4 color : COLOR;
-                float3 normal : TEXCOORD1;
-                float4 worldPosition : TEXCOORD2;
-            };
-
-            v2f vert (appdata v)
-            {
-                v2f o;
-                o.worldPosition = v.vertex;
-                o.pos = UnityObjectToClipPos(v.vertex);
-                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
-                o.color = v.color;
-                o.normal = v.normal;
-                return o;
+                "LightMode"="UniversalForward"
             }
 
-            half4 frag (v2f i) : SV_Target
+            HLSLPROGRAM
+            #pragma vertex Vert
+            #pragma fragment Frag
+            #pragma multi_compile_local _ UNITY_UI_CLIP_RECT
+            #pragma multi_compile_local _ UNITY_UI_ALPHACLIP
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+
+            TEXTURE2D(_MainTex);
+            SAMPLER(sampler_MainTex);
+
+            CBUFFER_START(UnityPerMaterial)
+                float4 _MainTex_ST;
+                float4 _ClipRect;
+            CBUFFER_END
+
+            struct Attributes
             {
-                half4 color = tex2D(_MainTex, i.uv);
-                float gray = dot(color.rgb, half3(0.299, 0.587, 0.114));
+                float4 positionOS : POSITION;
+                float2 uv : TEXCOORD0;
+                float4 color : COLOR;
+            };
+
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                float2 uv : TEXCOORD0;
+                float4 color : COLOR;
+                float4 worldPosition : TEXCOORD1;
+            };
+
+            Varyings Vert(Attributes input)
+            {
+                Varyings output;
+                output.worldPosition = input.positionOS;
+                output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
+                output.uv = TRANSFORM_TEX(input.uv, _MainTex);
+                output.color = input.color;
+                return output;
+            }
+
+            half4 Frag(Varyings input) : SV_Target
+            {
+                half4 color = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, input.uv);
+                half gray = dot(color.rgb, half3(0.299h, 0.587h, 0.114h));
                 color.rgb = gray.xxx;
-                color *= i.color;
-                
-                #ifdef UNITY_UI_CLIP_RECT
-                    color.a *= UnityGet2DClipping(i.worldPosition.xy, _ClipRect);
+                color *= input.color;
+
+                #if defined(UNITY_UI_CLIP_RECT)
+                float2 inside = step(_ClipRect.xy, input.worldPosition.xy) * step(input.worldPosition.xy, _ClipRect.zw);
+                color.a *= inside.x * inside.y;
                 #endif
-                
-                #ifdef UNITY_UI_ALPHACLIP
-                    clip(color.a - 0.001);
+
+                #if defined(UNITY_UI_ALPHACLIP)
+                clip(color.a - 0.001h);
                 #endif
-                
+
                 return color;
             }
             ENDHLSL
         }
     }
-
-    Fallback "Diffuse"
 }
