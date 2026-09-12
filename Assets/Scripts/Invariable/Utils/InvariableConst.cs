@@ -29,7 +29,9 @@ namespace Invariable
         public const string CDNPathOpenHarmony = "";
         public const string EncryptKey = "";
         public const string EncryptIv = "";
+        public const string MainCameraPath = "Main Camera";
         public const string UIRootPath = "UI_Root";
+        public const string UILightPath = "UI_Root/UI_Light";
         public const string UICameraPath_0 = "UI_Root/Canvas_0/UI_Camera";
         public const string UICameraPath_1 = "UI_Root/Canvas_1/UI_Camera";
         public const string UICameraPath_2 = "UI_Root/Canvas_2/UI_Camera";
