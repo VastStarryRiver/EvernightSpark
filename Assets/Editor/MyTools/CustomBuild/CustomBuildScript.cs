@@ -19,6 +19,15 @@ namespace MyTools
         }
 
         /// <summary>
+        /// 当前已是安卓且已装模块时菜单可点
+        /// </summary>
+        [MenuItem("VastStarryRiver/打包/打包安卓", true, 30)]
+        public static bool PackageProject_Android_Enable()
+        {
+            return CanPack(PreBuildValidator.AppPackTarget.Android);
+        }
+
+        /// <summary>
         /// 打包苹果 Xcode 工程
         /// </summary>
         [MenuItem("VastStarryRiver/打包/打包苹果", false, 31)]
@@ -28,12 +37,30 @@ namespace MyTools
         }
 
         /// <summary>
-        /// 打包鸿蒙导出工程
+        /// 当前已是苹果且已装模块时菜单可点
+        /// </summary>
+        [MenuItem("VastStarryRiver/打包/打包苹果", true, 31)]
+        public static bool PackageProject_iOS_Enable()
+        {
+            return CanPack(PreBuildValidator.AppPackTarget.iOS);
+        }
+
+        /// <summary>
+        /// 打包鸿蒙 DevEco 工程
         /// </summary>
         [MenuItem("VastStarryRiver/打包/打包鸿蒙", false, 32)]
         public static void PackageProject_OpenHarmony()
         {
             PackageProject(PreBuildValidator.AppPackTarget.OpenHarmony);
+        }
+
+        /// <summary>
+        /// 当前已是鸿蒙且已装模块时菜单可点
+        /// </summary>
+        [MenuItem("VastStarryRiver/打包/打包鸿蒙", true, 32)]
+        public static bool PackageProject_OpenHarmony_Enable()
+        {
+            return CanPack(PreBuildValidator.AppPackTarget.OpenHarmony);
         }
 
         /// <summary>
@@ -77,7 +104,7 @@ namespace MyTools
 
 
         /// <summary>
-        /// 切到目标 BuildTarget 后执行 BuildPlayer
+        /// 在当前 BuildTarget 已对齐时执行 BuildPlayer
         /// </summary>
         private static void PackageProject(PreBuildValidator.AppPackTarget target)
         {
@@ -93,14 +120,7 @@ namespace MyTools
 
             if (EditorUserBuildSettings.activeBuildTarget != buildTarget)
             {
-                if (!EditorUserBuildSettings.SwitchActiveBuildTarget(buildTargetGroup, buildTarget))
-                {
-                    GameLog.Error($"切换 Build Target 到 {buildTarget} 失败");
-
-                    return;
-                }
-
-                GameLog.Info($"已切换到 {buildTarget}，域重载完成后请再次执行本菜单");
+                GameLog.Error($"当前 BuildTarget 为 {EditorUserBuildSettings.activeBuildTarget}，与 {buildTarget} 不一致，先切平台再打包");
 
                 return;
             }
@@ -160,6 +180,22 @@ namespace MyTools
             {
                 GameLog.Error($"{folderName} 构建失败: {report.summary.result}");
             }
+        }
+
+        /// <summary>
+        /// 当前 BuildTarget 已是该端且编辑器已装该端模块
+        /// </summary>
+        private static bool CanPack(PreBuildValidator.AppPackTarget target)
+        {
+            BuildTarget buildTarget = PreBuildValidator.GetBuildTarget(target);
+            BuildTargetGroup buildTargetGroup = PreBuildValidator.GetBuildTargetGroup(target);
+
+            if (!BuildPipeline.IsBuildTargetSupported(buildTargetGroup, buildTarget))
+            {
+                return false;
+            }
+
+            return EditorUserBuildSettings.activeBuildTarget == buildTarget;
         }
     }
 }

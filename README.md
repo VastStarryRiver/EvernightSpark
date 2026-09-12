@@ -74,12 +74,11 @@ Assets/
 ├─ GameAssets/             # YooAsset 收集的动态资源
 │  ├─ DLL/{Android|iOS|OpenHarmony}/  # 加密后的 HotUpdate/AOT DLL .bin
 │  ├─ Prefabs/UI/          # UI 预制体
-│  ├─ Prefabs/Model/       # 运行时 3D 预制体
-│  ├─ Models/Fbx/          # FBX 源（Prefab 依赖）
-│  ├─ Models/Textures/     # 3D 贴图
+│  ├─ Prefabs/Model/       # 按地址动态加载的 3D 预制体
+│  ├─ Models/{模型名}/     # 该模型 FBX、贴图、材质、动画与仅被场景引用的预制体（FBX 与 Prefab 分开放）
 │  ├─ Audios/              # 音频
 │  ├─ Atlas/               # 图集
-│  ├─ Animation/           # 动画
+│  ├─ Animation/           # 动画（可按用途分子文件夹，如 Button）
 │  ├─ Materials/           # 材质
 │  ├─ Png/                 # 独立图片
 │  ├─ Config/              # 导表 bytes（YooAsset Config 组）
@@ -93,7 +92,7 @@ Assets/
 │  ├─ AssetBundle/         # YooAsset Bundle 构建
 │  ├─ CustomBuild/         # 安卓/苹果/鸿蒙打包与 CDN 复制
 │  ├─ AssetImporter/       # .bin 导入为 BinAsset
-│  ├─ AssetProcess/        # 音频/图片/图集/3D 模型导入设置（VastStarryRiver/资源处理 菜单）
+│  ├─ AssetProcess/        # 音频/图片/图集导入设置（VastStarryRiver/资源处理 菜单）
 │  ├─ AtlasBuilder/        # 通用纹理打包（多图合 Multiple Sprite PNG，ContextMenu BuildAtlas，输出在 Editor 目录）
 │  └─ InspectorEditor/     # 自定义 Inspector（UIButtonEditor）
 ├─ ToolPackage/            # 本地第三方库
@@ -184,7 +183,7 @@ BUG 出现前的操作、实际结果、预期结果、日志或截图
 - 配置表类型：`int` / `int[]` / `float` / `float[]` / `string` / `string[]`；源表位于 `Excel/`（仅 .xlsx/.xls），导表产物为 `GameAssets/Config/*.bytes` 与 `HotUpdate/Config/Generated/Config_*.cs`。
 - 平台键：`SdkManager.Instance.GetPlatformId()` 返回 `editor` / `android` / `ios` / `ohos`；DLL 与本机 CDN 前缀为 `Android` / `iOS` / `OpenHarmony`。`GetCDNPath()` 按端返回 `CDNPathAndroid` / `CDNPathiOS` / `CDNPathOpenHarmony`。
 - 安全区按宿主 Canvas 把 `Screen.safeArea` 换成画布偏移。
-- 渲染：内置管线 + Linear。3D 模型放 `GameAssets/Models` 与 `Prefabs/Model`，动态加载用 `YooAssetManager.Instance.AsyncLoadAsset<GameObject>`，不用 `OpenUIPrefabPanel`。
+- 渲染：URP 14.2.0-t1 + Linear。质量档为 Performant / Balanced / High Fidelity。`Start.scene` 的 `Main Camera` 是场景 Base 相机，四台 `UI_Camera` 是 Overlay 并叠在该 Base 上。后续业务 `.scene` 各自带场景相机。3D 模型源资源放 `GameAssets/Models`。场景和其它使用处只挂独立预制体，不直接挂 FBX，不建基于 FBX 的预制体变体。一份预制体只对应一份 FBX，一份 FBX 可对应多份预制体。同一目录内 FBX 与预制体分开放，新模型预制体目录为 `Prefabs/`。只有需要按地址加载的模型预制体放 `Prefabs/Model`，用 `YooAssetManager.Instance.AsyncLoadAsset<GameObject>`，不用 `OpenUIPrefabPanel`。只被场景引用的预制体留在 `Models`，随场景加载。
 - UOS：Launcher / CloudSave / Func Stateless；玩家存档 namespace 为 `kv_{CloudManager.CloudSaveGameId}_player`，排行榜快照为 `kv_{CloudManager.CloudSaveGameId}_rank`，须与 `CloudHelper.Secrets.GameId` 一致。后台显示名（仅展示）：玩家存档「安卓玩家数据」/「苹果玩家数据」/「鸿蒙玩家数据」，快照「世界排行榜」/「每日排行榜」。玩家存档 JSON 含 `CloudDataKeys.UserId` / `NickName` / `AvatarUrl`；排行榜条目为 `UserId` / `NickName` / `AvatarUrl` / `Data` 并列（`Data` 只保留排行分数等业务数据）。昵称与头像无平台来源时传空，不覆盖已有资料。
 - `HotUpdate` 引用 `Invariable` 与 `CloudService`（消费 Model DTO，如 `PlayerCloudData`）；项目内程序集统一名称引用，第三方包用 GUID。
 - 云读写业务入口：`SdkManager.SetCloudData` / `GetCloudData`；云初始化：`CloudManager.InitCloudData`。
