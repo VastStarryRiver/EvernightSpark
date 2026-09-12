@@ -764,7 +764,7 @@ YooAssetManager.Instance.UnLoadScene("Scenes_Battle");
 - 每个模型：`Assets/GameAssets/Models/{模型名}/`，内含 FBX、贴图、该模型 URP 材质与动画片段；只被场景引用的预制体也放这里。上述资源只作依赖，不单独寻址。同一目录内 FBX 与预制体分开放：网格在 `FBX/`，新模型预制体在 `Prefabs/`。工程里已有的糖果包预制体目录为 `Prefab/`
 - 场景和其它使用处只挂独立预制体，不直接挂 FBX，不建基于 FBX 的预制体变体。一份预制体只对应一份 FBX；一份 FBX 可对应多份预制体（不同材质等）
 - 按地址动态加载的模型 Prefab：`Assets/GameAssets/Prefabs/Model/`，可按模型分子文件夹（如 `Prefabs/Model/{模型名}/`），地址规则与 UI 一致（`Prefabs_{Prefab名}`）。不按地址加载的模型预制体不放此目录
-- 场景文件放 `GameAssets/Scenes/`，可按模型分子文件夹（如 `Scenes/{模型名}/`）。`.unity` 与 `.scene` 都是场景。场景模型的预制体放 `Models/{名}/Prefabs/`，由场景引用并随场景加载。该模型的 LightingData、lightmap、`.lighting` 留在 `Models/{名}/Scenes/`。按地址加载的单模型预制体放 `Prefabs/Model/{名}/`
+- 场景文件放 `GameAssets/Scenes/`，可按模型分子文件夹（如 `Scenes/{模型名}/`）。`.unity` 与 `.scene` 都是场景。场景模型的预制体放 `Models/{名}/Prefabs/`，由场景引用并随场景加载。该模型的 LightingData、lightmap、`.lighting` 留在 `Models/{名}/Scenes/`。LightingData 本机生成见 NewProjectSetup §1.1。按地址加载的单模型预制体放 `Prefabs/Model/{名}/`
 - 网格 FBX 放 `Models/{名}/FBX/`；Animator 与 clip 同放 `Models/{名}/Animations/`，可按角色再分子文件夹
 - 贴图：反照率开 sRGB+mipmap，法线/Mask/AO/Metallic 等线性图关 sRGB、开 mipmap
 - 该模型地形数据与贴图同放 `Models/{名}/Textures/`，地形可再分子文件夹（如 `Textures/Terrain/`）

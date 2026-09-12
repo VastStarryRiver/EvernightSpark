@@ -12,6 +12,19 @@
 6. HybridCLR 包为 `com.code-philosophy.hybridclr#v8.14.1`。换引擎大版本后打开 `HybridCLR/Installer` 重新安装，再执行 `HybridCLR/Generate/All`。安卓导出 HybridCLR DLL 或打安卓包时，`Packages/manifest.json` 须保留 `com.unity.modules.androidjni`（UOS Launcher 真机 Android 包装依赖 `AndroidJavaProxy` / `AndroidJavaObject`）。
 7. 团结 External Tools 核对本机 OpenHarmony SDK / Node / JDK（打鸿蒙包需要）。不在工程里写本机路径。
 
+### 1.1 场景 GI 烘焙
+
+日夜 `LightingData.asset` 需自行生成。第 1 章编译通过后、第 8 章构建之前，日、夜各烤一遍。Auto Generate 保持关闭。
+
+1. 打开 `Assets/GameAssets/Scenes/CandyFantasyWorld/CandyScene_day.unity`（场景在 `GameAssets/Scenes/`，不是 `Models/.../Scenes/`）。
+2. `Window` → `Rendering` → `Lighting`。
+3. Lighting Settings Asset 为 `CandyScene_daySettings`。若空，拖入 `Assets/GameAssets/Models/CandyFantasyWorld/Scenes/CandyScene_daySettings.lighting`。
+4. 点 **Generate Lighting**，等到 Progress 窗口无烘焙任务。
+5. 保存场景。引擎在 `Assets/GameAssets/Models/CandyFantasyWorld/Scenes/CandyScene_day/` 写出 `LightingData.asset` 与 `.meta`。
+6. 对 `Assets/GameAssets/Scenes/CandyFantasyWorld/CandyScene_night.unity` 重复第 1–5 步，Settings 用 `CandyScene_nightSettings`，产物在 `.../CandyScene_night/`。
+
+不要手写 `.meta`。Lighting 窗口的 Lighting Data Asset 不是 Missing，视口间接光恢复，即生成完成。
+
 ---
 
 ## 2. 版本控制初始化
@@ -303,6 +316,7 @@ private const string CloudSaveGameId = "{新GameId}"; // 必须与 CloudHelper.S
 - [ ] 三端包名为 `{包名}`，安卓含 ARM64，安卓/鸿蒙已开网络权限
 - [ ] `useCustomGradleSettingsTemplate` 已开启，且存在 `Assets/Plugins/Android/settingsTemplate.gradle`
 - [ ] Console 无编译错误
+- [ ] 日夜场景 Lighting 窗口的 Lighting Data Asset 均不是 Missing（第 1.1 节）
 
 ### 9.2 真机 / 平台侧（三端均测）
 
@@ -376,7 +390,7 @@ private const string CloudSaveGameId = "{新GameId}"; // 必须与 CloudHelper.S
 
 ## 附录 C：准备进度勾选（可选）
 
-- [ ] 1. 首次打开与环境恢复
+- [ ] 1. 首次打开与环境恢复（含日夜场景 Generate Lighting）
 - [ ] 2. 版本控制初始化与忽略文件备份策略
 - [ ] 3. UOS 新 App / 三服务 / Bucket / 三密钥
 - [ ] 4. 包名、签名、网络权限与 UOS 域名放行
