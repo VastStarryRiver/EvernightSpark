@@ -82,16 +82,8 @@ MonoBehaviour:
       AssetTags: 
       ActiveRuleName: EnableGroup
       Collectors:
-      - CollectPath: Assets/GameAssets/Prefabs/UI
-        CollectorGUID: 0fbeddb10eb1e2142b4b901305ea9482
-        CollectorType: 0
-        AddressRuleName: AddressByGroupAndFileName
-        PackRuleName: PackCollector
-        FilterRuleName: CollectAll
-        AssetTags: 
-        UserData: 
-      - CollectPath: Assets/GameAssets/Prefabs/Model
-        CollectorGUID: CiwWvXiuUC2ItxDio77XugzPky4zDVg//jh/1yVru5PxlDIOcxITld0=
+      - CollectPath: Assets/GameAssets/Prefabs
+        CollectorGUID: b4279c43e7baeb4469bb0fe0724274c7
         CollectorType: 0
         AddressRuleName: AddressByGroupAndFileName
         PackRuleName: PackCollector
