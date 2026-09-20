@@ -37,6 +37,8 @@
 - `BuildinFileSystemParameters`，并设置 `DISABLE_CATALOG_FILE=true`（工程无 `StreamingAssets/yoo`，默认读 catalog 会初始化失败）；
 - `CacheFileSystemParameters`，远程根为 `{GetCDNPath()}/yoo`。
 
+YooAsset 用反射创建 `DefaultBuildinFileSystem` / `DefaultCacheFileSystem`。手写 `Assets/link.xml` 保这两个类型以及 `DefaultUnpackFileSystem`（Buildin `OnCreate` 直接构造）。托管裁剪三端为 Low；`stripEngineCode` 为关。
+
 首发全远程，真机必须有网。不内置首包。编辑器仍走 `EditorSimulateMode`，不走云。
 
 三端 Bundle 与 AOT 纹理格式不同，禁止互拷。3D Prefab / FBX 依赖也按端重打。
@@ -70,7 +72,7 @@ VastStarryRiver/DLL/复制热更新DLL
 VastStarryRiver/DLL/复制元数据DLL
 ```
 
-必须先切到该端 `BuildTarget` 再导出。`HybridCLRData/` 由「导出所有DLL」重建，不要手建。产物写入：
+必须先切到该端 `BuildTarget` 再导出。`HybridCLRData/` 由「导出所有DLL」重建，不要手建。「导出所有DLL」同时重写 `Assets/HybridCLRGenerate/link.xml`；YooAsset 文件系统的手写 preserve 只放 `Assets/link.xml`，不要写进生成物。产物写入：
 
 ```text
 Assets/GameAssets/DLL/{Android|iOS|OpenHarmony}/

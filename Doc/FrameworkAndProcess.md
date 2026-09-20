@@ -40,7 +40,7 @@
 - `autoReferenced: false`；
 - 运行于热更新 DLL 加载之前；
 - 修改后不能只替换 `HotUpdate.dll`，通常需要重新构建并发布安装包；
-- 不直接引用 `HotUpdate`，通过字符串和反射启动热更新层；
+- 不直接编译引用 `HotUpdate`；启动链在提示「即将进入游戏...」后 `PreLoadDll`，成功则反射 `HotUpdate.StartGame.Play`；
 - 引用 `CloudService`（名称引用），通过 Func Stateless 远程代理调用云函数。
 
 主要命名空间：`Invariable`。
@@ -62,7 +62,7 @@
 - 可以引用 `Invariable` 的公共能力（名称引用）；
 - 引用 `CloudService`（名称引用，消费 Model DTO 如 `PlayerCloudData`、`CloudDataKeys`）；
 - 发布时作为加密 `.dll.bin` 放入 YooAsset 资源；
-- 入口必须保持为 `HotUpdate.StartGame.Play()`，除非同时修改反射入口。
+- `HotUpdate.StartGame.Play()` 调用 `HotUpdateUtils.OpenUIPrefabPanel("MainPanel", 0)`。
 
 主要命名空间：`HotUpdate`。
 
@@ -177,11 +177,11 @@ UI_Root/
 Manager 创建依赖：
 
 ```csharp
-Utils.CreateManagerInstance("GameManager");
-Utils.CreateManagerInstance("AudioManager", new string[] { "AudioListener" });
+Utils.CreateManagerInstance<GameManager>();
+Utils.CreateManagerInstance<AudioManager>(typeof(AudioListener));
 ```
 
-因此 Manager 类名、GameObject 名和反射查找名存在强约定。
+物体名即类型名。空物体上直接用 Unity 原生 `AddComponent`。
 
 ### 4.2 `Launcher.OnEnable`
 
@@ -191,7 +191,7 @@ Utils.CreateManagerInstance("AudioManager", new string[] { "AudioListener" });
 |---|---|---|
 | `Launcher_ShowTips` | `string` | 显示加载描述 |
 | `Launcher_ShowProgress` | `DownloadProgressInfo`（`CurrentBytes` / `TotalBytes`） | 显示下载进度 |
-| `Launcher_StartGame` | `object`（传 `null`） | 销毁加载面板和 `Launcher`；由 HotUpdate 层 `MainPanel.Awake` 触发（Invariable 层只订阅不发布） |
+| `Launcher_StartGame` | `object`（传 `null`） | 销毁加载面板和 `Launcher`；由 `HotUpdate.MainPanel.Awake` 触发 |
 
 ### 4.3 `Launcher.Start`
 
@@ -242,6 +242,8 @@ HostPlayModeParameters
   -> CacheFileSystemParameters + RemoteServices
 ```
 
+YooAsset 用 `Activator.CreateInstance` 创建 `DefaultBuildinFileSystem` / `DefaultCacheFileSystem`；`DefaultUnpackFileSystem` 由 Buildin 在 `OnCreate` 里直接构造。这三个类型的手写 preserve 在 `Assets/link.xml`。`HybridCLRGenerate/link.xml` 由「导出所有DLL」生成，不承担这份清单。初始化结束用 `GameLog.Error` 输出 `Status` 与 `Error`。
+
 失败时仅提示「资源加载失败，请检查网络后重启游戏」，无重试，状态机停在本节点。
 
 注意：编辑器域重载或二次进入启动流程时，若 YooAsset 已初始化，会走短路进入 `HotUpdateOver`，并再次执行清缓存、`InitCloudData` 全套流程；排查「未重新拉清单/未下载」时需先确认此分支。
@@ -280,35 +282,14 @@ Package.CreateResourceDownloader(
 2. 清理未使用 Bundle 缓存；
 3. 初始化平台 SDK；
 4. 初始化云存档（平台登录 → 云函数换取云存档令牌 → 拉取云端存档）；
-5. 加载 AOT 补充元数据；
-6. 加载 `HotUpdate.dll`；
-7. 反射调用热更新入口。
+5. 加载 AOT 补充元数据与 `HotUpdate.dll`（`PreLoadDll`）；
+6. 反射调用 `HotUpdate.StartGame.Play`。
 
-反射契约：
-
-```csharp
-Type type = hotUpdateAss.GetType("HotUpdate.StartGame");
-MethodInfo method = type.GetMethod("Play", ...);
-method.Invoke(null, null);
-```
-
-因此以下任一变化都必须同步修改 `HotUpdateOver.cs`：
-
-- 命名空间；
-- 类名；
-- 方法名；
-- 方法是否为静态；
-- 方法参数列表。
+`HotUpdate.MainPanel` 预制体在 `GameAssets/Prefabs/UI/MainPanel`。`Awake` 触发 `Launcher_StartGame`。`Start` 播放 BGM 与按钮动画。`OnTestClick1` 以 `LoadSceneMode.Single` 加载 `Scenes_CandyScene_day` 后同步场景相机位姿并隐藏 `m_objBG`。`OnTestClick2` 实例化 `Prefabs_EvilMage`。`OnTestClick3` 在配置回调里把 `m_textTest` 写成「写入云数据」并 `SetCloudData("Param", ...)`，同时立刻 `SetCloudData("Score", "100")` 与 `ReportRankScore("Score", 100)`。`OnTestClick4` 用 `GetCloudData("Param")` 刷新 `m_textTest`。打开页统一走 `HotUpdateUtils.OpenUIPrefabPanel`。
 
 ### 4.8 `HotUpdate.StartGame.Play`
 
-行为：
-
-```csharp
-Utils.OpenUIPrefabPanel("MainPanel", 0);
-```
-
-进入前由 `HotUpdateOver` 提示“即将进入游戏...”。`MainPanel.Awake` 触发 `Launcher_StartGame`，销毁加载面板和 Launcher。`MainPanel.Start` 播放 BGM 与按钮动画。`OnTestClick1` 以 `LoadSceneMode.Single` 加载 `Scenes_CandyScene_day` 后同步场景相机位姿并隐藏 `m_objBG`。`OnTestClick2` 实例化 `Prefabs_EvilMage`。`OnTestClick3` 在配置回调里把 `m_textTest` 写成「写入云数据」并 `SetCloudData("Param", ...)`，同时立刻 `SetCloudData("Score", "100")` 与 `ReportRankScore("Score", 100)`。`OnTestClick4` 用 `GetCloudData("Param")` 刷新 `m_textTest`。
+调用 `HotUpdateUtils.OpenUIPrefabPanel("MainPanel", 0)`。
 
 ## 5. HybridCLR DLL 加载
 
@@ -562,21 +543,22 @@ CancelInvokeByKey(key);
 打开页面应使用：
 
 ```csharp
-Utils.OpenUIPrefabPanel(string prefabPath, int layer, Action<GameObject> callBack = null);
+HotUpdateUtils.OpenUIPrefabPanel(string prefabPath, int layer, Action<GameObject> callBack = null);
 ```
 
-`prefabPath` 传路径或文件名均可，内部取文件名并去掉 `.prefab`。Tips/FloatText 业务封装走 `HotUpdateUtils.OpenTipsPanel` / `ShowFloatText`（内部仍调用 `Utils.OpenUIPrefabPanel`）。
+`prefabPath` 传路径或文件名均可，内部取文件名并去掉 `.prefab`。Tips/FloatText 业务封装走 `HotUpdateUtils.OpenTipsPanel` / `ShowFloatText`（内部调用 `HotUpdateUtils.OpenUIPrefabPanel`）。
 
 执行过程：
 
 1. 根据文件名得到页面名；
 2. 若 `UIManager.AllPanel` 已有该页面则重新激活并回调；
-3. 若同名页面正在加载中则忽略本次打开；
+3. 若同名页面正在加载则忽略本次打开；
 4. 加载地址 `Prefabs_{页面名}`；
-5. 实例化到 `UI_Root/Canvas_{layer}/Ts_Panel`；
-6. 通过类型名查找或动态添加组件（解析顺序：无名空间 → `Invariable.` → `HotUpdate.` → `FindTypeTool` 内置 UGUI 映射表 → 热更 DLL 程序集反射）；
-7. 将其作为 `UIPanel` 注册；
-8. 调用回调。
+5. 资源回调里同帧 `Instantiate` 到 `UI_Root/Canvas_{layer}/Ts_Panel`；
+6. 取根节点 `UIPanel`，缺失则销毁；
+7. 注册为 `UIPanel` 并调用回调。
+
+热更具体类型在回调里用 `GetComponent<T>()`。
 
 ### 10.2 页面关闭
 
@@ -598,7 +580,7 @@ public class UIPanel : MonoBehaviour
 
 | 页面 | 脚本 | 层级 | 用途 |
 |---|---|---:|---|
-| MainPanel | `HotUpdate.UI/MainPanel/MainPanel.cs` | 0 | 主界面（含云功能测试按钮） |
+| MainPanel | `HotUpdate.MainPanel` | 0 | 主界面（含云功能测试按钮）；预制体在 `GameAssets/Prefabs/UI/MainPanel`；由 `StartGame.Play` 打开 |
 | TipsPanel | `HotUpdate.UI/Popup/TipsPanel.cs` | 2 | 单/双按钮提示 |
 | FloatTextPanel | `HotUpdate.UI/Popup/FloatTextPanel.cs` | 3 | 可复用飘字提示 |
 
@@ -713,9 +695,8 @@ ConfigManager.ClearAll();
 - 远程头像 URL 走 `SetRemoteImage`（下载为 Texture2D 后赋 `Image.sprite` / `RawImage.texture`）；图集不走 Utils，由业务脚本挂载 `SpriteAtlas` 后 `GetSprite` 赋值（见 §6）；
 - 灰度材质（`SetGray`）；
 - Animation 播放；
-- 按字符串查找/添加组件（`GetComponent` / `AddComponent`，含 `HotUpdate` 程序集类型解析）；
-- UI 页面打开/关闭（`OpenUIPrefabPanel` / `CloseUIPrefabPanel`）；面板父节点按 layer 选择 `InvariableConst.UIPanelPath_0..3`；
-- Manager GameObject 创建；
+- UI 页面关闭（`CloseUIPrefabPanel`）；
+- Manager GameObject 创建（`CreateManagerInstance<T>(params Type[])`），空物体上直接用 Unity 原生 `AddComponent`；
 - 文件大小格式化（`FormatFileByteSize`，与 `ConfigUtils.FormatFileByteSize` 重复实现）；
 - HTML 颜色解析。
 

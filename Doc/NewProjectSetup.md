@@ -9,7 +9,7 @@
 3. Package Manager 会按 `Packages/manifest.json` 拉取依赖（含 UOS CDN / CloudSave / Func Stateless / Launcher、YooAsset、HybridCLR、NuGetForUnity 等）。若有 git 包拉取失败，检查网络与凭据后重试。
 4. 使用 NuGetForUnity 还原 `Newtonsoft.Json`（与云函数、云存档 JSON 序列化相关）。
 5. 打开 Console，确认**无编译错误**后再进入后续步骤。若出现 `UOSSettings` 相关加载异常，先完成第 5 章「UOS Launcher 重新 Link」，或按编辑器提示使用 `UOS/Launcher/Fix settings by reimport` / `UOS/Launcher/Fix settings by delete`。
-6. HybridCLR 包为 `com.code-philosophy.hybridclr#v8.14.1`。换引擎大版本后打开 `HybridCLR/Installer` 重新安装，再执行 `HybridCLR/Generate/All`。安卓导出 HybridCLR DLL 或打安卓包时，`Packages/manifest.json` 须保留 `com.unity.modules.androidjni`（UOS Launcher 真机 Android 包装依赖 `AndroidJavaProxy` / `AndroidJavaObject`）。
+6. HybridCLR 包为 `com.code-philosophy.hybridclr#v8.14.1`。换引擎大版本后打开 `HybridCLR/Installer` 重新安装，再执行 `HybridCLR/Generate/All`。`Generate/All` 重写 `Assets/HybridCLRGenerate/link.xml`，不替代手写 `Assets/link.xml`（YooAsset 文件系统反射构造的 preserve）。安卓导出 HybridCLR DLL 或打安卓包时，`Packages/manifest.json` 须保留 `com.unity.modules.androidjni`（UOS Launcher 真机 Android 包装依赖 `AndroidJavaProxy` / `AndroidJavaObject`）。
 7. 团结 External Tools 核对本机 OpenHarmony SDK / Node / JDK（打鸿蒙包需要）。不在工程里写本机路径。
 
 ### 1.1 场景 GI 烘焙

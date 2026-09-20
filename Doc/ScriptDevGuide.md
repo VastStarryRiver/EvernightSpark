@@ -520,12 +520,12 @@ Assets/GameAssets/Prefabs/UI/InventoryPanel/InventoryPanel.prefab
 ### 5.3 打开页面
 
 ```csharp
-Utils.OpenUIPrefabPanel(
+HotUpdateUtils.OpenUIPrefabPanel(
     "InventoryPanel",
     0,
-    panelObject =>
+    (panelObject) =>
     {
-        var panel = panelObject.GetComponent<InventoryPanel>();
+        InventoryPanel panel = panelObject.GetComponent<InventoryPanel>();
         // 初始化参数
     }
 );
@@ -548,7 +548,7 @@ UIManager.Instance.CloseUIPanel("InventoryPanel");
 ### 5.5 UI 页面检查清单
 
 - [ ] 脚本名、类名、Prefab 名一致；
-- [ ] 使用 `Utils.OpenUIPrefabPanel` 打开页面；Tips/FloatText 可用 `HotUpdateUtils` 业务封装；
+- [ ] 使用 `HotUpdateUtils.OpenUIPrefabPanel` 打开页面；Tips/FloatText 可用 `HotUpdateUtils` 业务封装；
 - [ ] layer 对应节点存在；
 - [ ] Inspector 引用完整，所有固定组件均通过 `public` 字段拖拽赋值；
 - [ ] 没有使用 `Find` 查找本可直接绑定的 UI 组件；
@@ -782,7 +782,7 @@ YooAssetManager.Instance.AsyncLoadAsset<GameObject>("Prefabs_SomeModel", prefab 
 });
 ```
 
-不要用 `Utils.OpenUIPrefabPanel` 开 3D 物体。`Start.scene` 的 `Main Camera` 是常驻 Base（`InvariableConst.MainCameraPath`，经 `Utils.MainCamera` 访问）。热更场景可自带相机节点作位姿源，Camera 组件须关闭，由业务把 transform 写到 `Utils.MainCamera`。禁止再开第二台启用的场景 Camera 与常驻 Base 抢画。固定绑定的 `MeshRenderer` / `SkinnedMeshRenderer` / `Animation` / `Animator` 用 public 字段拖引用。LOD 命名 `_LOD0` `_LOD1` `_LOD2`。
+不要用 `HotUpdateUtils.OpenUIPrefabPanel` 开 3D 物体。`Start.scene` 的 `Main Camera` 是常驻 Base（`InvariableConst.MainCameraPath`，经 `Utils.MainCamera` 访问）。热更场景可自带相机节点作位姿源，Camera 组件须关闭，由业务把 transform 写到 `Utils.MainCamera`。禁止再开第二台启用的场景 Camera 与常驻 Base 抢画。固定绑定的 `MeshRenderer` / `SkinnedMeshRenderer` / `Animation` / `Animator` 用 public 字段拖引用。LOD 命名 `_LOD0` `_LOD1` `_LOD2`。
 
 ### 9.6 资源加载检查清单
 
@@ -1056,8 +1056,7 @@ public void DoPlatformAction(Action<bool> callBack)
 
 ## 15. Prefab 和脚本绑定注意事项
 
-- 热更新 UI 可以通过 Prefab 序列化脚本或运行时按类名补加组件；
-- 运行时补加依赖“Prefab 名 = 类名”；
+- 热更新 UI 必须在 Prefab 根节点预先挂对应 `UIPanel` 子类；打开页只取该组件，缺失则报错并销毁实例；
 - 字段序列化变化可能导致已有 Prefab 丢引用；
 - 重命名脚本或移动命名空间时要检查 Prefab；
 - 修改字段类型后要重新打开 Prefab 验证；

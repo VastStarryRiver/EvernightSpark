@@ -33,7 +33,7 @@ AnimatorStateMachine:
   m_ChildStates:
   - serializedVersion: 1
     m_State: {fileID: 3230769205290408402}
-    m_Position: {x: 200, y: 0, z: 0}
+    m_Position: {x: 230, y: 80, z: 0}
   m_ChildStateMachines: []
   m_AnyStateTransitions: []
   m_EntryTransitions: []
@@ -46,7 +46,7 @@ AnimatorStateMachine:
   m_DefaultState: {fileID: 3230769205290408402}
 --- !u!1102 &3230769205290408402
 AnimatorState:
-  serializedVersion: 6
+  serializedVersion: 7
   m_ObjectHideFlags: 1
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -54,6 +54,7 @@ AnimatorState:
   m_Name: ScaleAnim
   m_Speed: 1
   m_CycleOffset: 0
+  m_OverrideDuration: 1
   m_Transitions: []
   m_StateMachineBehaviours: []
   m_Position: {x: 50, y: 50, z: 0}
@@ -64,6 +65,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
+  m_UseOverrideDuration: 0
   m_Motion: {fileID: 7400000, guid: 6a6a7f7587036cc4f9b248bc6d5fde1c, type: 2}
   m_Tag: 
   m_SpeedParameter: 
