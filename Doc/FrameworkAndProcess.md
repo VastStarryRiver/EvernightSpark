@@ -242,7 +242,7 @@ HostPlayModeParameters
   -> CacheFileSystemParameters + RemoteServices
 ```
 
-YooAsset 用 `Activator.CreateInstance` 创建 `DefaultBuildinFileSystem` / `DefaultCacheFileSystem`；`DefaultUnpackFileSystem` 由 Buildin 在 `OnCreate` 里直接构造。这三个类型的手写 preserve 在 `Assets/link.xml`。`HybridCLRGenerate/link.xml` 由「导出所有DLL」生成，不承担这份清单。初始化结束用 `GameLog.Error` 输出 `Status` 与 `Error`。
+YooAsset 用 `Activator.CreateInstance` 创建 `DefaultBuildinFileSystem` / `DefaultCacheFileSystem`；`DefaultUnpackFileSystem` 由 Buildin 在 `OnCreate` 里直接构造。`HybridCLRGenerate/link.xml` 由「导出所有DLL」生成。
 
 失败时仅提示「资源加载失败，请检查网络后重启游戏」，无重试，状态机停在本节点。
 
@@ -280,10 +280,9 @@ Package.CreateResourceDownloader(
 
 1. 清理未使用清单缓存；
 2. 清理未使用 Bundle 缓存；
-3. 初始化平台 SDK；
-4. 初始化云存档（平台登录 → 云函数换取云存档令牌 → 拉取云端存档）；
-5. 加载 AOT 补充元数据与 `HotUpdate.dll`（`PreLoadDll`）；
-6. 反射调用 `HotUpdate.StartGame.Play`。
+3. `CloudManager.InitCloudData`（平台登录 → 云函数换取云存档令牌 → 拉取云端存档）；
+4. 成功后再 `PreLoadDll`（AOT 补充元数据与 `HotUpdate.dll`）；
+5. 反射调用 `HotUpdate.StartGame.Play`。
 
 `HotUpdate.MainPanel` 预制体在 `GameAssets/Prefabs/UI/MainPanel`。`Awake` 触发 `Launcher_StartGame`。`Start` 播放 BGM 与按钮动画。`OnTestClick1` 以 `LoadSceneMode.Single` 加载 `Scenes_CandyScene_day` 后同步场景相机位姿并隐藏 `m_objBG`。`OnTestClick2` 实例化 `Prefabs_EvilMage`。`OnTestClick3` 在配置回调里把 `m_textTest` 写成「写入云数据」并 `SetCloudData("Param", ...)`，同时立刻 `SetCloudData("Score", "100")` 与 `ReportRankScore("Score", 100)`。`OnTestClick4` 用 `GetCloudData("Param")` 刷新 `m_textTest`。打开页统一走 `HotUpdateUtils.OpenUIPrefabPanel`。
 
@@ -710,13 +709,13 @@ ConfigManager.ClearAll();
 
 `Assets/Resources/UOSSettings.asset` 经 UOS Launcher 关联 UOS App（所有游戏共享同一 App）。
 
-云存档链路：
+真机入口为 `CloudManager.InitCloudData`。编辑器立即回调。真机内部依次：
 
-1. `CloudManager.InitCloudData`；
-2. `SdkManager.PlatformLogin`（真机返回设备标识，编辑器返回空并跳过云）；
+1. `CloudSaveSDK.InitializeAsync`；
+2. `SdkManager.PlatformLogin`（返回设备标识）；
 3. Func Stateless 云函数 `AppLogin`（`GenerateToken("app-" + platform + "-" + deviceId)`）；
 4. `AuthTokenManager.SaveToken`（只存 AccessToken + UserId）；
-5. CloudSave 单存档 KV 拉取/上传。上传前校验令牌有效性，临期/过期自动重签；遇 401 再重签并重试一次。
+5. CloudSave 单存档 KV 拉取，成功后回调继续启动。上传前校验令牌有效性，临期/过期自动重签；遇 401 再重签并重试一次。
 
 数据隔离规则：
 

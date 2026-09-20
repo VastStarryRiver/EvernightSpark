@@ -103,7 +103,6 @@ Assets/
 ├─ Plugins/                # 预编译库（ExcelDataReader.dll 等）
 ├─ UOSLauncherEncrypt/     # UOS Launcher 自带加密模块，勿改
 ├─ HybridCLRGenerate/      # HybridCLR 生成物（link.xml、AOTGenericReferences.cs）
-├─ link.xml                # 手写 preserve：YooAsset 反射创建的文件系统类型
 └─ Settings/               # 工程设置资产
 
 Excel/                     # 配置源文件（Player.xlsx、RoleRune.xlsx）

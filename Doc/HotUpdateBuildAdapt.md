@@ -37,7 +37,7 @@
 - `BuildinFileSystemParameters`，并设置 `DISABLE_CATALOG_FILE=true`（工程无 `StreamingAssets/yoo`，默认读 catalog 会初始化失败）；
 - `CacheFileSystemParameters`，远程根为 `{GetCDNPath()}/yoo`。
 
-YooAsset 用反射创建 `DefaultBuildinFileSystem` / `DefaultCacheFileSystem`。手写 `Assets/link.xml` 保这两个类型以及 `DefaultUnpackFileSystem`（Buildin `OnCreate` 直接构造）。托管裁剪三端为 Low；`stripEngineCode` 为关。
+YooAsset 用反射创建 `DefaultBuildinFileSystem` / `DefaultCacheFileSystem`；`DefaultUnpackFileSystem` 由 Buildin 在 `OnCreate` 里直接构造。托管裁剪三端为 Low；`stripEngineCode` 为关。
 
 首发全远程，真机必须有网。不内置首包。编辑器仍走 `EditorSimulateMode`，不走云。
 
@@ -72,7 +72,7 @@ VastStarryRiver/DLL/复制热更新DLL
 VastStarryRiver/DLL/复制元数据DLL
 ```
 
-必须先切到该端 `BuildTarget` 再导出。`HybridCLRData/` 由「导出所有DLL」重建，不要手建。「导出所有DLL」同时重写 `Assets/HybridCLRGenerate/link.xml`；YooAsset 文件系统的手写 preserve 只放 `Assets/link.xml`，不要写进生成物。产物写入：
+必须先切到该端 `BuildTarget` 再导出。`HybridCLRData/` 由「导出所有DLL」重建，不要手建。「导出所有DLL」同时重写 `Assets/HybridCLRGenerate/link.xml`。产物写入：
 
 ```text
 Assets/GameAssets/DLL/{Android|iOS|OpenHarmony}/
@@ -102,7 +102,7 @@ AOT 清单单一事实源：`InvariableConst.AotDllNames`。团结 iOS 导出工
 
 菜单：`VastStarryRiver/打包/打包安卓`。
 
-输出：`Build/Android/{productName}.apk`。每次先清空 `Build/Android` 再出包。本轮打 APK（侧载/国内渠道）。需要 AAB 时在编辑器改 `buildAppBundle` 后自行出包。
+输出：`Build/Android/{productName}.apk`。每次先清空 `Build/Android` 再出包。默认打 APK（侧载/国内渠道）。需要 AAB 时在编辑器改 `buildAppBundle` 后自行出包。
 
 打包菜单仅在当前 `BuildTarget` 已是 `Android` 且已装模块时可点，先切平台再点。安卓须 IL2CPP、含 ARM64、强制网络权限、包名非空。keystore 本机填写，未配置只警告。
 
